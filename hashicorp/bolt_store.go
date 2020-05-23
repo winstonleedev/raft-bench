@@ -1,4 +1,4 @@
-package raftboltdb
+package hashicorp
 
 import (
 	"errors"

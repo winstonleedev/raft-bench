@@ -1,4 +1,4 @@
-module github.com/thanhphu/raft-bench/raftboltdb
+module github.com/thanhphu/raft-bench/hashicorp
 
 go 1.14
 

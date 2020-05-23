@@ -1,4 +1,7 @@
-package main
+package raftbench
+
+// import "./etcd"
 
 func main() {
+	// etcd.Main()
 }

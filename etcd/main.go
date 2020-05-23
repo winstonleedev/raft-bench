@@ -21,7 +21,8 @@ import (
 	"github.com/coreos/etcd/raft/raftpb"
 )
 
-func main() {
+// Main function
+func Main() {
 	cluster := flag.String("cluster", "http://127.0.0.1:9021", "comma separated cluster peers")
 	id := flag.Int("id", 1, "node ID")
 	kvport := flag.Int("port", 9121, "key-value server port")

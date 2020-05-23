@@ -1,7 +1,12 @@
-package raftbench
+package main
 
-// import "./etcd"
+import (
+	"fmt"
+
+	"github.com/thanhphu/raftbench/etcd"
+)
 
 func main() {
-	// etcd.Main()
+	fmt.Println("Hello world.")
+	etcd.Main()
 }

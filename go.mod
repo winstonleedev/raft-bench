@@ -13,6 +13,7 @@ require (
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/hashicorp/go-msgpack v1.1.5
 	github.com/hashicorp/raft v1.1.2
+	github.com/hashicorp/raft-boltdb v0.0.0-20171010151810-6e5ba93211ea
 	github.com/lni/dragonboat/v3 v3.2.2
 	github.com/lni/goutils v1.1.0
 	github.com/prometheus/client_golang v1.6.0 // indirect

@@ -80,7 +80,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stdout, "get key\n")
 }
 
-func main() {
+func Main() {
 	nodeID := flag.Int("nodeid", 1, "NodeID to use")
 	addr := flag.String("addr", "", "Nodehost address")
 	join := flag.Bool("join", false, "Joining a new node")

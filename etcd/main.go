@@ -15,20 +15,13 @@
 package etcd
 
 import (
-	"flag"
 	"strings"
 
 	"github.com/coreos/etcd/raft/raftpb"
 )
 
 // Main function
-func Main() {
-	cluster := flag.String("cluster", "http://127.0.0.1:9021", "comma separated cluster peers")
-	id := flag.Int("id", 1, "node ID")
-	kvport := flag.Int("port", 9121, "key-value server port")
-	join := flag.Bool("join", false, "join an existing cluster")
-	flag.Parse()
-
+func Main(cluster string, id int, kvport int, join bool) {
 	proposeC := make(chan string)
 	defer close(proposeC)
 	confChangeC := make(chan raftpb.ConfChange)
@@ -37,10 +30,10 @@ func Main() {
 	// raft provides a commit stream for the proposals from the http api
 	var kvs *kvstore
 	getSnapshot := func() ([]byte, error) { return kvs.getSnapshot() }
-	commitC, errorC, snapshotterReady := newRaftNode(*id, strings.Split(*cluster, ","), *join, getSnapshot, proposeC, confChangeC)
+	commitC, errorC, snapshotterReady := newRaftNode(id, strings.Split(cluster, ","), join, getSnapshot, proposeC, confChangeC)
 
 	kvs = newKVStore(<-snapshotterReady, proposeC, commitC, errorC)
 
 	// the key-value http handler will propose updates to raft
-	serveHttpKVAPI(kvs, *kvport, confChangeC, errorC)
+	serveHttpKVAPI(kvs, kvport, confChangeC, errorC)
 }

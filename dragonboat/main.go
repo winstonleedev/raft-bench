@@ -21,7 +21,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -80,12 +79,8 @@ func printUsage() {
 	fmt.Fprintf(os.Stdout, "get key\n")
 }
 
-func Main() {
-	nodeID := flag.Int("nodeid", 1, "NodeID to use")
-	addr := flag.String("addr", "", "Nodehost address")
-	join := flag.Bool("join", false, "Joining a new node")
-	flag.Parse()
-	if len(*addr) == 0 && *nodeID != 1 && *nodeID != 2 && *nodeID != 3 {
+func Main(nodeID int, addr string, join bool) {
+	if len(addr) == 0 && nodeID != 1 && nodeID != 2 && nodeID != 3 {
 		fmt.Fprintf(os.Stderr, "node id must be 1, 2 or 3 when address is not specified\n")
 		os.Exit(1)
 	}
@@ -94,16 +89,16 @@ func Main() {
 		signal.Ignore(syscall.Signal(0xd))
 	}
 	initialMembers := make(map[uint64]string)
-	if !*join {
+	if !join {
 		for idx, v := range addresses {
 			initialMembers[uint64(idx+1)] = v
 		}
 	}
 	var nodeAddr string
-	if len(*addr) != 0 {
-		nodeAddr = *addr
+	if len(addr) != 0 {
+		nodeAddr = addr
 	} else {
-		nodeAddr = initialMembers[uint64(*nodeID)]
+		nodeAddr = initialMembers[uint64(nodeID)]
 	}
 	fmt.Fprintf(os.Stdout, "node address: %s\n", nodeAddr)
 	logger.GetLogger("raft").SetLevel(logger.ERROR)
@@ -111,7 +106,7 @@ func Main() {
 	logger.GetLogger("transport").SetLevel(logger.WARNING)
 	logger.GetLogger("grpc").SetLevel(logger.WARNING)
 	rc := config.Config{
-		NodeID:             uint64(*nodeID),
+		NodeID:             uint64(nodeID),
 		ClusterID:          exampleClusterID,
 		ElectionRTT:        10,
 		HeartbeatRTT:       1,
@@ -122,7 +117,7 @@ func Main() {
 	datadir := filepath.Join(
 		"example-data",
 		"helloworld-data",
-		fmt.Sprintf("node%d", *nodeID))
+		fmt.Sprintf("node%d", nodeID))
 	nhc := config.NodeHostConfig{
 		WALDir:         datadir,
 		NodeHostDir:    datadir,
@@ -133,7 +128,7 @@ func Main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := nh.StartOnDiskCluster(initialMembers, *join, NewMemKV, rc); err != nil {
+	if err := nh.StartOnDiskCluster(initialMembers, join, NewMemKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)
 		os.Exit(1)
 	}

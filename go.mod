@@ -3,7 +3,6 @@ module github.com/thanhphu/raftbench
 go 1.14
 
 require (
-	github.com/boltdb/bolt v1.3.1
 	github.com/coreos/etcd v3.3.22+incompatible
 	github.com/coreos/go-semver v0.2.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
@@ -11,7 +10,6 @@ require (
 	github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
-	github.com/hashicorp/go-msgpack v1.1.5
 	github.com/hashicorp/raft v1.1.2
 	github.com/hashicorp/raft-boltdb v0.0.0-20171010151810-6e5ba93211ea
 	github.com/lni/dragonboat/v3 v3.2.2

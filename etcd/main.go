@@ -15,13 +15,21 @@
 package etcd
 
 import (
+	"fmt"
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/coreos/etcd/raft/raftpb"
 )
 
+const (
+	numKeys = 1
+	mil     = 1000000
+)
+
 // Main function
-func Main(cluster string, id int, kvport int, join bool) {
+func Main(cluster string, id int, kvport int, join bool, test bool) {
 	proposeC := make(chan string)
 	defer close(proposeC)
 	confChangeC := make(chan raftpb.ConfChange)
@@ -33,6 +41,30 @@ func Main(cluster string, id int, kvport int, join bool) {
 	commitC, errorC, snapshotterReady := newRaftNode(id, strings.Split(cluster, ","), join, getSnapshot, proposeC, confChangeC)
 
 	kvs = newKVStore(<-snapshotterReady, proposeC, commitC, errorC)
+
+	if test {
+		for i := 0; i < 10; i++ {
+			time.Sleep(3000)
+
+			start := time.Now()
+			k := 0
+			for k < numKeys*mil {
+				v := rand.Int()
+				go kvs.Propose(string(k), string(v))
+				k += 1
+			}
+			fmt.Printf("Write test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
+
+			time.Sleep(3000)
+			start = time.Now()
+			k = 0
+			for k < numKeys*mil {
+				go kvs.Lookup(string(k))
+				k += 1
+			}
+			fmt.Printf("Read test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
+		}
+	}
 
 	// the key-value http handler will propose updates to raft
 	serveHttpKVAPI(kvs, kvport, confChangeC, errorC)

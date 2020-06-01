@@ -22,6 +22,7 @@ func main() {
 	id := flag.Int("id", 1, "node ID")
 	kvport := flag.Int("port", 9121, "key-value server port")
 	join := flag.Bool("join", false, "join an existing cluster")
+	test := flag.Bool("test", false, "use this node for r/w tests")
 
 	var inmem bool
 	var httpAddr string
@@ -35,9 +36,9 @@ func main() {
 	flag.StringVar(&joinAddr, "join2", "", "Set join address, if any")
 	flag.StringVar(&nodeID, "id2", "", "Node ID")
 
-	nodeID2 := flag.Int("nodeid2", 1, "NodeID to use")
+	// nodeID2 := flag.Int("nodeid2", 1, "NodeID to use")
 	addr2 := flag.String("addr2", "", "Nodehost address")
-	join2 := flag.Bool("join3", false, "Joining a new node")
+	// join2 := flag.Bool("join3", false, "Joining a new node")join := flag.Bool("join", false, "join an existing cluster")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] <raft-data-path> \n", os.Args[0])
@@ -47,15 +48,10 @@ func main() {
 	flag.Parse()
 	switch *engine {
 	case "etcd":
-		etcd.Main(*cluster, *id, *kvport, *join)
+		etcd.Main(*cluster, *id, *kvport, *join, *test)
 	case "hashicorp":
-		hashicorp.Main(inmem, httpAddr, raftAddr, joinAddr, nodeID)
+		hashicorp.Main(inmem, httpAddr, raftAddr, joinAddr, nodeID, *test)
 	case "dragonboat":
-		dragonboat.Main(*nodeID2, *addr2, *join2)
+		dragonboat.Main(*id, *addr2, *join, *test)
 	}
-}
-
-func join(joinAddr, raftAddr, nodeID string) error {
-
-	return nil
 }

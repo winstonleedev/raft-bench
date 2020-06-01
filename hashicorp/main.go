@@ -20,7 +20,7 @@ const (
 	DefaultRaftAddr = ":12000"
 )
 
-func Main(inmem bool, httpAddr string, raftAddr string, joinAddr string, nodeID string) {
+func Main(inmem bool, httpAddr string, raftAddr string, joinAddr string, nodeID string, test bool) {
 	flag.Parse()
 
 	if flag.NArg() == 0 {

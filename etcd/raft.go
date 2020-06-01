@@ -23,6 +23,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/coreos/etcd/etcdserver/stats"
 	"github.com/coreos/etcd/pkg/fileutil"
 	"github.com/coreos/etcd/pkg/types"
 	"github.com/coreos/etcd/raft"
@@ -288,11 +289,13 @@ func (rc *raftNode) startRaft() {
 		rc.node = raft.StartNode(c, startPeers)
 	}
 
+	lstats := stats.NewLeaderStats(string(rc.id))
 	rc.transport = &rafthttp.Transport{
-		ID:        types.ID(rc.id),
-		ClusterID: 0x1000,
-		Raft:      rc,
-		ErrorC:    make(chan error),
+		ID:          types.ID(rc.id),
+		ClusterID:   0x1000,
+		Raft:        rc,
+		ErrorC:      make(chan error),
+		LeaderStats: lstats,
 	}
 
 	rc.transport.Start()

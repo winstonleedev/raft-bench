@@ -18,10 +18,10 @@ ondisk is an example program for dragonboat's on disk state machine.
 package dragonboat
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -45,6 +45,11 @@ const (
 const (
 	PUT RequestType = iota
 	GET
+)
+
+const (
+	numKeys = 1
+	mil     = 1000000
 )
 
 var (
@@ -115,9 +120,7 @@ func Main(nodeID int, addr string, join bool, test bool) {
 		CompactionOverhead: 5,
 	}
 	datadir := filepath.Join(
-		"example-data",
-		"helloworld-data",
-		fmt.Sprintf("node%d", nodeID))
+		fmt.Sprintf("wal-dragonboat-%d", nodeID))
 	nhc := config.NodeHostConfig{
 		WALDir:         datadir,
 		NodeHostDir:    datadir,
@@ -133,27 +136,44 @@ func Main(nodeID int, addr string, join bool, test bool) {
 		os.Exit(1)
 	}
 	raftStopper := syncutil.NewStopper()
-	consoleStopper := syncutil.NewStopper()
 	ch := make(chan string, 16)
-	consoleStopper.RunWorker(func() {
-		reader := bufio.NewReader(os.Stdin)
-		for {
-			s, err := reader.ReadString('\n')
-			if err != nil {
-				close(ch)
-				return
-			}
-			if s == "exit\n" {
-				raftStopper.Stop()
-				nh.Stop()
-				return
-			}
-			ch <- s
-		}
-	})
-	printUsage()
 	raftStopper.RunWorker(func() {
 		cs := nh.GetNoOPSession(exampleClusterID)
+
+		if test {
+			ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
+			for i := 0; i < 3; i++ {
+				time.Sleep(3000)
+
+				start := time.Now()
+				k := 0
+				for k < numKeys*mil {
+					v := rand.Int()
+					kv := &KVData{
+						Key: string(k),
+						Val: string(v),
+					}
+					data, err := json.Marshal(kv)
+					if err != nil {
+						panic(err)
+					}
+					go nh.SyncPropose(ctx, cs, data)
+					k += 1
+				}
+				fmt.Printf("Write test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
+
+				time.Sleep(3000)
+				start = time.Now()
+				k = 0
+				for k < numKeys*mil {
+					go nh.SyncRead(ctx, exampleClusterID, []byte(string(k)))
+					k += 1
+				}
+				fmt.Printf("Read test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
+			}
+			raftStopper.Stop()
+		}
+
 		for {
 			select {
 			case v, ok := <-ch:

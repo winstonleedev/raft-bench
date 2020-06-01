@@ -34,8 +34,6 @@ import (
 )
 
 const (
-	appliedIndexKey    string = "disk_kv_applied_index"
-	testDBDirName      string = "example-data"
 	currentDBFilename  string = "current"
 	updatingDBFilename string = "current.updating"
 )
@@ -75,11 +73,6 @@ func isNewRun(dir string) bool {
 		return true
 	}
 	return false
-}
-
-func getNodeDBDirName(clusterID uint64, nodeID uint64) string {
-	part := fmt.Sprintf("%d_%d", clusterID, nodeID)
-	return filepath.Join(testDBDirName, part)
 }
 
 func getNewRandomDBDirName(dir string) string {
@@ -224,34 +217,6 @@ func (d *MemKV) queryAppliedIndex() (uint64, error) {
 // Open opens the state machine and return the index of the last Raft Log entry
 // already updated into the state machine.
 func (d *MemKV) Open(stopc <-chan struct{}) (uint64, error) {
-	dir := getNodeDBDirName(d.clusterID, d.nodeID)
-	if err := createNodeDataDir(dir); err != nil {
-		panic(err)
-	}
-	var dbdir string
-	if !isNewRun(dir) {
-		if err := cleanupNodeDataDir(dir); err != nil {
-			return 0, err
-		}
-		var err error
-		dbdir, err = getCurrentDBDirName(dir)
-		if err != nil {
-			return 0, err
-		}
-		if _, err := os.Stat(dbdir); err != nil {
-			if os.IsNotExist(err) {
-				panic("db dir unexpectedly deleted")
-			}
-		}
-	} else {
-		dbdir = getNewRandomDBDirName(dir)
-		if err := saveCurrentDBDirName(dir, dbdir); err != nil {
-			return 0, err
-		}
-		if err := replaceCurrentDBFile(dir); err != nil {
-			return 0, err
-		}
-	}
 	return 0, nil
 }
 
@@ -360,12 +325,7 @@ func (d *MemKV) RecoverFromSnapshot(r io.Reader,
 	if d.closed {
 		panic("recover from snapshot called after Close()")
 	}
-	dir := getNodeDBDirName(d.clusterID, d.nodeID)
-	dbdir := getNewRandomDBDirName(dir)
-	oldDirName, err := getCurrentDBDirName(dir)
-	if err != nil {
-		return err
-	}
+
 	sz := make([]byte, 8)
 	if _, err := io.ReadFull(r, sz); err != nil {
 		return err
@@ -386,12 +346,7 @@ func (d *MemKV) RecoverFromSnapshot(r io.Reader,
 		}
 		d.kvStore[dataKv.Key] = dataKv.Val
 	}
-	if err := saveCurrentDBDirName(dir, dbdir); err != nil {
-		return err
-	}
-	if err := replaceCurrentDBFile(dir); err != nil {
-		return err
-	}
+
 	newLastApplied, err := d.queryAppliedIndex()
 	if err != nil {
 		panic(err)
@@ -400,7 +355,7 @@ func (d *MemKV) RecoverFromSnapshot(r io.Reader,
 		panic("last applied not moving forward")
 	}
 	d.lastApplied = newLastApplied
-	return os.RemoveAll(oldDirName)
+	return nil
 }
 
 // Close closes the state machine.

@@ -1,0 +1,4 @@
+# Use goreman to run `go get github.com/mattn/goreman`
+raftbench1: ./raftbench --engine dragonboat --id 1 --test
+raftbench2: ./raftbench --engine dragonboat --id 2
+raftbench3: ./raftbench --engine dragonboat --id 3

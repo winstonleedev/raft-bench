@@ -6,23 +6,22 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/thanhphu/raftbench/hashicorp/http"
 	"github.com/thanhphu/raftbench/hashicorp/store"
 )
 
-// Command line defaults
 const (
-	DefaultHTTPAddr = ":11000"
-	DefaultRaftAddr = ":12000"
+	numKeys = 1
+	mil     = 1000000
 )
 
 func Main(inmem bool, httpAddr string, raftAddr string, joinAddr string, nodeID string, test bool) {
-	flag.Parse()
-
 	if flag.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "No Raft storage directory specified\n")
 		os.Exit(1)
@@ -56,6 +55,30 @@ func Main(inmem bool, httpAddr string, raftAddr string, joinAddr string, nodeID 
 	}
 
 	log.Println("hraftd started successfully")
+
+	if test {
+		for i := 0; i < 3; i++ {
+			time.Sleep(3000)
+
+			start := time.Now()
+			k := 0
+			for k < numKeys*mil {
+				v := rand.Int()
+				go s.Set(string(k), string(v))
+				k += 1
+			}
+			fmt.Printf("Write test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
+
+			time.Sleep(3000)
+			start = time.Now()
+			k = 0
+			for k < numKeys*mil {
+				go s.Get(string(k))
+				k += 1
+			}
+			fmt.Printf("Read test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
+		}
+	}
 
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt)

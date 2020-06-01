@@ -17,7 +17,7 @@ const (
 )
 
 func main() {
-	engine := flag.String("engine", "etcd", "etcd/hashicorp/dragonboat select the raft engine")
+	engine := flag.String("engine", "etcd", "etcd/hashi/dragonboat select the raft engine")
 	cluster := flag.String("cluster", "http://127.0.0.1:9021", "comma separated cluster peers")
 	id := flag.Int("id", 1, "node ID")
 	kvport := flag.Int("port", 9121, "key-value server port")
@@ -33,12 +33,10 @@ func main() {
 	flag.BoolVar(&inmem, "inmem", false, "Use in-memory storage for Raft")
 	flag.StringVar(&httpAddr, "haddr", DefaultHTTPAddr, "Set the HTTP bind address")
 	flag.StringVar(&raftAddr, "raddr", DefaultRaftAddr, "Set Raft bind address")
-	flag.StringVar(&joinAddr, "join2", "", "Set join address, if any")
-	flag.StringVar(&nodeID, "id2", "", "Node ID")
+	flag.StringVar(&joinAddr, "joinport", "", "Set join address, if any")
+	flag.StringVar(&nodeID, "nodeid", "", "Node ID")
 
-	// nodeID2 := flag.Int("nodeid2", 1, "NodeID to use")
-	addr2 := flag.String("addr2", "", "Nodehost address")
-	// join2 := flag.Bool("join3", false, "Joining a new node")join := flag.Bool("join", false, "join an existing cluster")
+	addr := flag.String("addr", "", "Nodehost address")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] <raft-data-path> \n", os.Args[0])
@@ -49,9 +47,9 @@ func main() {
 	switch *engine {
 	case "etcd":
 		etcd.Main(*cluster, *id, *kvport, *join, *test)
-	case "hashicorp":
+	case "hashi":
 		hashicorp.Main(inmem, httpAddr, raftAddr, joinAddr, nodeID, *test)
 	case "dragonboat":
-		dragonboat.Main(*id, *addr2, *join, *test)
+		dragonboat.Main(*id, *addr, *join, *test)
 	}
 }

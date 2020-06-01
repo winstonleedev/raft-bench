@@ -43,7 +43,7 @@ func Main(cluster string, id int, kvport int, join bool, test bool) {
 	kvs = newKVStore(<-snapshotterReady, proposeC, commitC, errorC)
 
 	if test {
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 3; i++ {
 			time.Sleep(3000)
 
 			start := time.Now()

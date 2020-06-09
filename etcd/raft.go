@@ -453,6 +453,7 @@ func (rc *raftNode) serveChannels() {
 
 func (rc *raftNode) serveRaft() {
 	url, err := url.Parse(rc.peers[rc.id-1])
+	log.Printf("Starting raft at address %v", rc.peers[rc.id-1])
 	if err != nil {
 		log.Fatalf("raftexample: Failed parsing URL (%v)", err)
 	}

@@ -29,7 +29,7 @@ const (
 )
 
 // Main function
-func Main(cluster string, id int, kvport int, join bool, test bool) {
+func Main(cluster string, id int, _ int, join bool, test bool) {
 	proposeC := make(chan string)
 	defer close(proposeC)
 	confChangeC := make(chan raftpb.ConfChange)

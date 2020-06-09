@@ -21,7 +21,7 @@ import (
 
 func Test_kvstore_snapshot(t *testing.T) {
 	tm := map[string]string{"foo": "bar"}
-	s := &kvstore{kvStore: tm}
+	s := &keystore{kvStore: tm}
 
 	v, _ := s.Lookup("foo")
 	if v != "bar" {

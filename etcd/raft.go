@@ -59,7 +59,7 @@ type raftNode struct {
 	wal         *wal.WAL
 
 	snapshotter      *snap.Snapshotter
-	snapshotterReady chan *snap.Snapshotter // signals when snapshotter is ready
+	snapshotterReady chan *snap.Snapshotter // signals when snapshots is ready
 
 	snapCount uint64
 	transport *rafthttp.Transport
@@ -336,7 +336,7 @@ func (rc *raftNode) publishSnapshot(snapshotToSave raftpb.Snapshot) {
 	if snapshotToSave.Metadata.Index <= rc.appliedIndex {
 		log.Fatalf("snapshot index [%d] should > progress.appliedIndex [%d]", snapshotToSave.Metadata.Index, rc.appliedIndex)
 	}
-	rc.commitC <- nil // trigger kvstore to load snapshot
+	rc.commitC <- nil // trigger keystore to load snapshot
 
 	rc.confState = snapshotToSave.Metadata.ConfState
 	rc.snapshotIndex = snapshotToSave.Metadata.Index

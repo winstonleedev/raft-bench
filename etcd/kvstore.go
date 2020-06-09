@@ -17,7 +17,6 @@ package etcd
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
 	"log"
 	"sync"
 
@@ -25,11 +24,11 @@ import (
 )
 
 // a key-value store backed by raft
-type kvstore struct {
-	proposeC    chan<- string // channel for proposing updates
-	mu          sync.RWMutex
-	kvStore     map[string]string // current committed key-value pairs
-	snapshotter *snap.Snapshotter
+type keystore struct {
+	proposeC  chan<- string // channel for proposing updates
+	mu        sync.RWMutex
+	kvStore   map[string]string // current committed key-value pairs
+	snapshots *snap.Snapshotter
 }
 
 type kv struct {
@@ -37,8 +36,13 @@ type kv struct {
 	Val string
 }
 
-func newKVStore(snapshotter *snap.Snapshotter, proposeC chan<- string, commitC <-chan *string, errorC <-chan error) *kvstore {
-	s := &kvstore{proposeC: proposeC, kvStore: make(map[string]string), snapshotter: snapshotter}
+func newKVStore(snapshots *snap.Snapshotter, proposeC chan<- string, commitC <-chan *string, errorC <-chan error) *keystore {
+	s := &keystore{
+		proposeC:  proposeC,
+		mu:        sync.RWMutex{},
+		kvStore:   make(map[string]string),
+		snapshots: snapshots,
+	}
 	// replay log into key-value map
 	s.readCommits(commitC, errorC)
 	// read commits from raft into kvStore map until error
@@ -46,14 +50,14 @@ func newKVStore(snapshotter *snap.Snapshotter, proposeC chan<- string, commitC <
 	return s
 }
 
-func (s *kvstore) Lookup(key string) (string, bool) {
+func (s *keystore) Lookup(key string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	v, ok := s.kvStore[key]
 	return v, ok
 }
 
-func (s *kvstore) Propose(k string, v string) {
+func (s *keystore) Propose(k string, v string) {
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(kv{k, v}); err != nil {
 		log.Fatal(err)
@@ -61,12 +65,12 @@ func (s *kvstore) Propose(k string, v string) {
 	s.proposeC <- buf.String()
 }
 
-func (s *kvstore) readCommits(commitC <-chan *string, errorC <-chan error) {
+func (s *keystore) readCommits(commitC <-chan *string, errorC <-chan error) {
 	for data := range commitC {
 		if data == nil {
 			// done replaying log; new data incoming
 			// OR signaled to load snapshot
-			snapshot, err := s.snapshotter.Load()
+			snapshot, err := s.snapshots.Load()
 			if err == snap.ErrNoSnapshot {
 				return
 			}
@@ -94,19 +98,20 @@ func (s *kvstore) readCommits(commitC <-chan *string, errorC <-chan error) {
 	}
 }
 
-func (s *kvstore) getSnapshot() ([]byte, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return json.Marshal(s.kvStore)
+func (s *keystore) getSnapshot() ([]byte, error) {
+	return make([]byte, 0), nil
+	//s.mu.RLock()
+	//defer s.mu.RUnlock()
+	//return json.Marshal(s.kvStore)
 }
 
-func (s *kvstore) recoverFromSnapshot(snapshot []byte) error {
-	var store map[string]string
-	if err := json.Unmarshal(snapshot, &store); err != nil {
-		return err
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.kvStore = store
+func (s *keystore) recoverFromSnapshot(snapshot []byte) error {
+	//var store map[string]string
+	//if err := json.Unmarshal(snapshot, &store); err != nil {
+	//	return err
+	//}
+	//s.mu.Lock()
+	//defer s.mu.Unlock()
+	//s.kvStore = store
 	return nil
 }

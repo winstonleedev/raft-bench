@@ -36,7 +36,7 @@ func Main(cluster string, id int, kvport int, join bool, test bool) {
 	defer close(confChangeC)
 
 	// raft provides a commit stream for the proposals from the http api
-	var kvs *kvstore
+	var kvs *keystore
 	getSnapshot := func() ([]byte, error) { return kvs.getSnapshot() }
 	commitC, errorC, snapshotterReady := newRaftNode(id, strings.Split(cluster, ","), join, getSnapshot, proposeC, confChangeC)
 

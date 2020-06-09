@@ -65,7 +65,4 @@ func Main(cluster string, id int, kvport int, join bool, test bool) {
 			fmt.Printf("Read test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
 		}
 	}
-
-	// the key-value http handler will propose updates to raft
-	serveHttpKVAPI(kvs, kvport, confChangeC, errorC)
 }

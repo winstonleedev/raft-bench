@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/thanhphu/raftbench/hashicorp/http"
 	"github.com/thanhphu/raftbench/hashicorp/store"
 )
 
@@ -40,11 +39,6 @@ func Main(inmem bool, httpAddr string, raftAddr string, joinAddr string, nodeID 
 	s.RaftBind = raftAddr
 	if err := s.Open(joinAddr == "", nodeID); err != nil {
 		log.Fatalf("failed to open store: %s", err.Error())
-	}
-
-	h := httpd.New(httpAddr, s)
-	if err := h.Start(); err != nil {
-		log.Fatalf("failed to start HTTP service: %s", err.Error())
 	}
 
 	// If join was specified, make the join request.

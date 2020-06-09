@@ -289,15 +289,13 @@ func (rc *raftNode) startRaft() {
 		rc.node = raft.StartNode(c, startPeers)
 	}
 
-	lstats := stats.NewLeaderStats(string(rc.id))
-	tstats := stats.NewServerStats("", string(rc.id))
 	rc.transport = &rafthttp.Transport{
 		ID:          types.ID(rc.id),
 		ClusterID:   0x1000,
 		Raft:        rc,
 		ErrorC:      make(chan error),
-		LeaderStats: lstats,
-		ServerStats: tstats,
+		LeaderStats: stats.NewLeaderStats(string(rc.id)),
+		ServerStats: stats.NewServerStats("", string(rc.id)),
 	}
 
 	rc.transport.Start()

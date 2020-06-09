@@ -15,17 +15,11 @@
 package etcd
 
 import (
-	"fmt"
-	"math/rand"
 	"strings"
-	"time"
 
 	"github.com/coreos/etcd/raft/raftpb"
-)
 
-const (
-	numKeys = 1
-	mil     = 1000000
+	"github.com/thanhphu/raftbench/util"
 )
 
 // Main function
@@ -42,27 +36,9 @@ func Main(cluster string, id int, _ int, join bool, test bool) {
 
 	kvs = newKVStore(<-snapshotterReady, proposeC, commitC, errorC)
 
-	if test {
-		for i := 0; i < 3; i++ {
-			time.Sleep(3000)
-
-			start := time.Now()
-			k := 0
-			for k < numKeys*mil {
-				v := rand.Int()
-				go kvs.Propose(string(k), string(v))
-				k += 1
-			}
-			fmt.Printf("Write test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
-
-			time.Sleep(3000)
-			start = time.Now()
-			k = 0
-			for k < numKeys*mil {
-				go kvs.Lookup(string(k))
-				k += 1
-			}
-			fmt.Printf("Read test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
-		}
-	}
+	util.Bench(test, func(k string) {
+		kvs.Lookup(k)
+	}, func(k string, v string) {
+		kvs.Propose(k, v)
+	})
 }

@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -34,6 +33,8 @@ import (
 	"github.com/lni/dragonboat/v3/config"
 	"github.com/lni/dragonboat/v3/logger"
 	"github.com/lni/goutils/syncutil"
+
+	"github.com/thanhphu/raftbench/util"
 )
 
 type RequestType uint64
@@ -139,40 +140,27 @@ func Main(nodeID int, addr string, join bool, test bool) {
 	ch := make(chan string, 16)
 	raftStopper.RunWorker(func() {
 		cs := nh.GetNoOPSession(exampleClusterID)
+		ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 
-		if test {
-			ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
-			for i := 0; i < 3; i++ {
-				time.Sleep(3000)
-
-				start := time.Now()
-				k := 0
-				for k < numKeys*mil {
-					v := rand.Int()
-					kv := &KVData{
-						Key: string(k),
-						Val: string(v),
-					}
-					data, err := json.Marshal(kv)
-					if err != nil {
-						panic(err)
-					}
-					go nh.SyncPropose(ctx, cs, data)
-					k += 1
-				}
-				fmt.Printf("Write test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
-
-				time.Sleep(3000)
-				start = time.Now()
-				k = 0
-				for k < numKeys*mil {
-					go nh.SyncRead(ctx, exampleClusterID, []byte(string(k)))
-					k += 1
-				}
-				fmt.Printf("Read test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
+		util.Bench(test, func(k string) {
+			_, err := nh.SyncRead(ctx, exampleClusterID, []byte(string(k)))
+			if err != nil {
+				panic(err)
 			}
-			raftStopper.Stop()
-		}
+		}, func(k string, v string) {
+			kv := &KVData{
+				Key: k,
+				Val: v,
+			}
+			data, err := json.Marshal(kv)
+			if err != nil {
+				panic(err)
+			}
+			_, err = nh.SyncPropose(ctx, cs, data)
+			if err != nil {
+				panic(err)
+			}
+		})
 
 		for {
 			select {

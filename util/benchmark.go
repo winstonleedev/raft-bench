@@ -63,4 +63,5 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 		}
 		_, _ = f.WriteString(fmt.Sprintf("read,%v,%v,%v,%v", i+1, success, numKeys*mil, time.Since(start)))
 	}
+	log.Printf("BENCHMARK COMPLETE\n")
 }

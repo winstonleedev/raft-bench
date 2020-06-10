@@ -54,17 +54,17 @@ func Main(httpAddr string, raftAddr string, joinAddr string, nodeID string, test
 	log.Println("raftbench started successfully")
 
 	util.Bench(test, func(k string) {
-		if s.IsLeader() {
-			_, err := s.Get(k)
-			if err != nil {
-				log.Printf("error retrieving key %v\n", err)
-			}
+		_, err := s.Get(k)
+		if err != nil {
+			// log.Printf("error retrieving key %v\n", err)
+			return
 		}
 	}, func(k string, v string) {
 		if s.IsLeader() {
 			err := s.Set(k, v)
 			if err != nil {
-				log.Printf("error setting key %v\n", err)
+				// log.Printf("error setting key %v\n", err)
+				return
 			}
 		}
 	})

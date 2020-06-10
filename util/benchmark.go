@@ -10,10 +10,11 @@ import (
 
 const (
 	numKeys   = 1
-	mil       = 1000000
-	runs      = 10
-	wait      = 3000
-	firstWait = 10000
+	mil       = 1000000 // Run the benchmark numKeys * mil times
+	runs      = 10      // Number of time to run the benchmark
+	wait      = 3000    // Time to wait before each step and before read / write
+	firstWait = 10000   // Time to wait before starting benchmark
+	step      = 10      // If read fails, wait this much before trying to avoid overloading the system
 )
 
 func Bench(test bool, logFile string, read func(string) bool, write func(string, string) bool) {
@@ -43,6 +44,8 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 				ok := write(string(k), string(v))
 				if ok {
 					success++
+				} else {
+					time.Sleep(step)
 				}
 			}()
 			k += 1
@@ -58,6 +61,8 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 				ok := read(string(k))
 				if ok {
 					success++
+				} else {
+					time.Sleep(step)
 				}
 			}()
 			k += 1

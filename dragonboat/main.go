@@ -51,9 +51,9 @@ const (
 var (
 	// initial nodes count is fixed to three, their addresses are also fixed
 	addresses = []string{
-		"localhost:63001",
-		"localhost:63002",
-		"localhost:63003",
+		"raft0:63000",
+		"raft1:63000",
+		"raft2:63000",
 	}
 )
 
@@ -132,13 +132,12 @@ func Main(nodeID int, addr string, join bool, test bool, logFile string) {
 		os.Exit(1)
 	}
 	raftStopper := syncutil.NewStopper()
-	ch := make(chan string, 16)
 	raftStopper.RunWorker(func() {
 		cs := nh.GetNoOPSession(exampleClusterID)
 		ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 
 		util.Bench(test, logFile, func(k string) bool {
-			_, err := nh.SyncRead(ctx, exampleClusterID, []byte(string(k)))
+			_, err := nh.SyncRead(ctx, exampleClusterID, []byte(k))
 			if err != nil {
 				return false
 			}
@@ -158,50 +157,6 @@ func Main(nodeID int, addr string, join bool, test bool, logFile string) {
 			}
 			return true
 		})
-
-		for {
-			select {
-			case v, ok := <-ch:
-				if !ok {
-					return
-				}
-				msg := strings.Replace(v, "\n", "", 1)
-				// input message must be in the following formats -
-				// put key value
-				// get key
-				rt, key, val, ok := parseCommand(msg)
-				if !ok {
-					fmt.Fprintf(os.Stderr, "invalid input\n")
-					printUsage()
-					continue
-				}
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-				if rt == PUT {
-					kv := &KVData{
-						Key: key,
-						Val: val,
-					}
-					data, err := json.Marshal(kv)
-					if err != nil {
-						panic(err)
-					}
-					_, err = nh.SyncPropose(ctx, cs, data)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "SyncPropose returned error %v\n", err)
-					}
-				} else {
-					result, err := nh.SyncRead(ctx, exampleClusterID, []byte(key))
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "SyncRead returned error %v\n", err)
-					} else {
-						fmt.Fprintf(os.Stdout, "query key: %s, result: %s\n", key, result)
-					}
-				}
-				cancel()
-			case <-raftStopper.ShouldStop():
-				return
-			}
-		}
 	})
 	raftStopper.Wait()
 }

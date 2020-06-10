@@ -56,12 +56,12 @@ func Main(httpAddr string, raftAddr string, joinAddr string, nodeID string, test
 	util.Bench(test, func(k string) {
 		_, err := s.Get(k)
 		if err != nil {
-			log.Fatal("error retrieving key")
+			log.Printf("error retrieving key %v\n", err)
 		}
 	}, func(k string, v string) {
 		err := s.Set(k, v)
 		if err != nil {
-			log.Fatal("error setting key")
+			log.Printf("error setting key %v\n", err)
 		}
 	})
 }

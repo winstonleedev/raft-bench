@@ -19,6 +19,7 @@ func Bench(test bool, read func(string), write func(string, string)) {
 		return
 	}
 
+	log.Printf("Starting benchmark...\n")
 	for i := 0; i < runs; i++ {
 		time.Sleep(wait)
 

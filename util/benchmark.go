@@ -31,6 +31,7 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 	time.Sleep(firstWait)
 	log.Printf("Starting benchmark...\n")
 	for i := 0; i < runs; i++ {
+		log.Printf("BENCHMARK %v OF %v\n", i+1, runs)
 		time.Sleep(wait)
 
 		start := time.Now()
@@ -46,7 +47,7 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 			}()
 			k += 1
 		}
-		_, _ = f.WriteString(fmt.Sprintf("write,%v,%v,%v,%v", i+1, success, numKeys*mil, time.Since(start)))
+		_, _ = f.WriteString(fmt.Sprintf("write,%v,%v,%v,%v\n", i+1, success, numKeys*mil, time.Since(start).Microseconds()))
 
 		time.Sleep(wait)
 		start = time.Now()
@@ -61,7 +62,7 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 			}()
 			k += 1
 		}
-		_, _ = f.WriteString(fmt.Sprintf("read,%v,%v,%v,%v", i+1, success, numKeys*mil, time.Since(start)))
+		_, _ = f.WriteString(fmt.Sprintf("read,%v,%v,%v,%v\n", i+1, success, numKeys*mil, time.Since(start).Microseconds()))
 	}
 	log.Printf("BENCHMARK COMPLETE\n")
 }

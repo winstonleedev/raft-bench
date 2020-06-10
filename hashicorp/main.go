@@ -8,16 +8,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 
 	"github.com/thanhphu/raftbench/hashicorp/http"
 	"github.com/thanhphu/raftbench/hashicorp/store"
 	"github.com/thanhphu/raftbench/util"
-)
-
-const (
-	numKeys = 1
-	mil     = 1000000
 )
 
 func Main(inmem bool, httpAddr string, raftAddr string, joinAddr string, nodeID string, test bool) {
@@ -66,11 +60,6 @@ func Main(inmem bool, httpAddr string, raftAddr string, joinAddr string, nodeID 
 			log.Fatal("error setting key")
 		}
 	})
-
-	terminate := make(chan os.Signal, 1)
-	signal.Notify(terminate, os.Interrupt)
-	<-terminate
-	log.Println("hraftd exiting")
 }
 
 func join(joinAddr, raftAddr, nodeID string) error {

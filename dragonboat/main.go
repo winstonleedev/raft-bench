@@ -48,11 +48,6 @@ const (
 	GET
 )
 
-const (
-	numKeys = 1
-	mil     = 1000000
-)
-
 var (
 	// initial nodes count is fixed to three, their addresses are also fixed
 	addresses = []string{

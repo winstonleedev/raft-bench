@@ -20,17 +20,17 @@ func main() {
 	engine := flag.String("engine", "etcd", "etcd/hashi/dragonboat select the raft engine")
 	cluster := flag.String("cluster", "http://127.0.0.1:9021", "comma separated cluster peers")
 	id := flag.Int("id", 1, "node ID")
-	kvport := flag.Int("port", 9121, "key-value server port")
+	kvPort := flag.Int("port", 9121, "key-value server port")
 	join := flag.Bool("join", false, "join an existing cluster")
 	test := flag.Bool("test", false, "use this node for r/w tests")
 
-	var inmem bool
+	var inMem bool
 	var httpAddr string
 	var raftAddr string
 	var joinAddr string
 	var nodeID string
 
-	flag.BoolVar(&inmem, "inmem", false, "Use in-memory storage for Raft")
+	flag.BoolVar(&inMem, "inmem", false, "Use in-memory storage for Raft")
 	flag.StringVar(&httpAddr, "haddr", DefaultHTTPAddr, "Set the HTTP bind address")
 	flag.StringVar(&raftAddr, "raddr", DefaultRaftAddr, "Set Raft bind address")
 	flag.StringVar(&joinAddr, "joinaddr", "", "Set join address, if any")
@@ -46,9 +46,9 @@ func main() {
 	flag.Parse()
 	switch *engine {
 	case "etcd":
-		etcd.Main(*cluster, *id, *kvport, *join, *test)
+		etcd.Main(*cluster, *id, *kvPort, *join, *test)
 	case "hashi":
-		hashicorp.Main(inmem, httpAddr, raftAddr, joinAddr, nodeID, *test)
+		hashicorp.Main(inMem, httpAddr, raftAddr, joinAddr, nodeID, *test)
 	case "dragonboat":
 		dragonboat.Main(*id, *addr, *join, *test)
 	}

@@ -16,3 +16,4 @@
 
 raftbench
 wal-*
+*.csv

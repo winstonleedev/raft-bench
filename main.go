@@ -23,6 +23,7 @@ func main() {
 	kvPort := flag.Int("port", 9121, "key-value server port")
 	join := flag.Bool("join", false, "join an existing cluster")
 	test := flag.Bool("test", false, "use this node for r/w tests")
+	logFile := flag.String("logfile", "result.csv", "name of csv log file (used together with --test)")
 
 	var httpAddr string
 	var raftAddr string
@@ -44,10 +45,10 @@ func main() {
 	flag.Parse()
 	switch *engine {
 	case "etcd":
-		etcd.Main(*cluster, *id, *kvPort, *join, *test)
+		etcd.Main(*cluster, *id, *kvPort, *join, *test, *logFile)
 	case "hashi":
-		hashicorp.Main(httpAddr, raftAddr, joinAddr, nodeID, *test)
+		hashicorp.Main(httpAddr, raftAddr, joinAddr, nodeID, *test, *logFile)
 	case "dragonboat":
-		dragonboat.Main(*id, *addr, *join, *test)
+		dragonboat.Main(*id, *addr, *join, *test, *logFile)
 	}
 }

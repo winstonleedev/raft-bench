@@ -14,7 +14,7 @@ import (
 	"github.com/thanhphu/raftbench/util"
 )
 
-func Main(httpAddr string, raftAddr string, joinAddr string, nodeID string, test bool) {
+func Main(httpAddr string, raftAddr string, joinAddr string, nodeID string, test bool, logFile string) {
 	if flag.NArg() == 0 {
 		log.Printf("No Raft storage directory specified\n")
 		os.Exit(1)
@@ -53,20 +53,20 @@ func Main(httpAddr string, raftAddr string, joinAddr string, nodeID string, test
 
 	log.Println("raftbench started successfully")
 
-	util.Bench(test, func(k string) {
+	util.Bench(test, logFile, func(k string) bool {
 		_, err := s.Get(k)
 		if err != nil {
 			// log.Printf("error retrieving key %v\n", err)
-			return
+			return false
 		}
-	}, func(k string, v string) {
-		if s.IsLeader() {
-			err := s.Set(k, v)
-			if err != nil {
-				// log.Printf("error setting key %v\n", err)
-				return
-			}
+		return true
+	}, func(k string, v string) bool {
+		err := s.Set(k, v)
+		if err != nil {
+			// log.Printf("error setting key %v\n", err)
+			return false
 		}
+		return true
 	})
 }
 

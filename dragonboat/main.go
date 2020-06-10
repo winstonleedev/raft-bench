@@ -80,7 +80,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stdout, "get key\n")
 }
 
-func Main(nodeID int, addr string, join bool, test bool) {
+func Main(nodeID int, addr string, join bool, test bool, logFile string) {
 	if len(addr) == 0 && nodeID != 1 && nodeID != 2 && nodeID != 3 {
 		fmt.Fprintf(os.Stderr, "node id must be 1, 2 or 3 when address is not specified\n")
 		os.Exit(1)
@@ -137,24 +137,26 @@ func Main(nodeID int, addr string, join bool, test bool) {
 		cs := nh.GetNoOPSession(exampleClusterID)
 		ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 
-		util.Bench(test, func(k string) {
+		util.Bench(test, logFile, func(k string) bool {
 			_, err := nh.SyncRead(ctx, exampleClusterID, []byte(string(k)))
 			if err != nil {
-				panic(err)
+				return false
 			}
-		}, func(k string, v string) {
+			return true
+		}, func(k string, v string) bool {
 			kv := &KVData{
 				Key: k,
 				Val: v,
 			}
 			data, err := json.Marshal(kv)
 			if err != nil {
-				panic(err)
+				return false
 			}
 			_, err = nh.SyncPropose(ctx, cs, data)
 			if err != nil {
-				panic(err)
+				return false
 			}
+			return true
 		})
 
 		for {

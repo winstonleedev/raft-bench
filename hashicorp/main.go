@@ -51,7 +51,7 @@ func Main(httpAddr string, raftAddr string, joinAddr string, nodeID string, test
 		}
 	}
 
-	log.Println("raftbench started successfully")
+	log.Println("raft-bench started successfully")
 
 	util.Bench(test, logFile, func(k string) bool {
 		_, err := s.Get(k)

@@ -278,28 +278,28 @@ func (d *MemKV) PrepareSnapshot() (interface{}, error) {
 // saveToWriter saves all existing key-value pairs to the provided writer.
 // As an example, we use the most straight forward way to implement this.
 func (d *MemKV) saveToWriter(w io.Writer) error {
-	sz := make([]byte, 8)
-	binary.LittleEndian.PutUint64(sz, uint64(len(d.kvStore)))
-	if _, err := w.Write(sz); err != nil {
-		return err
-	}
-	for key, val := range d.kvStore {
-		dataKv := &KVData{
-			Key: fmt.Sprintf("%v", key),
-			Val: val,
-		}
-		data, err := json.Marshal(dataKv)
-		if err != nil {
-			panic(err)
-		}
-		binary.LittleEndian.PutUint64(sz, uint64(len(data)))
-		if _, err := w.Write(sz); err != nil {
-			return err
-		}
-		if _, err := w.Write(data); err != nil {
-			return err
-		}
-	}
+	//sz := make([]byte, 8)
+	//binary.LittleEndian.PutUint64(sz, uint64(len(d.kvStore)))
+	//if _, err := w.Write(sz); err != nil {
+	//	return err
+	//}
+	//for key, val := range d.kvStore {
+	//	dataKv := &KVData{
+	//		Key: fmt.Sprintf("%v", key),
+	//		Val: val,
+	//	}
+	//	data, err := json.Marshal(dataKv)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	binary.LittleEndian.PutUint64(sz, uint64(len(data)))
+	//	if _, err := w.Write(sz); err != nil {
+	//		return err
+	//	}
+	//	if _, err := w.Write(data); err != nil {
+	//		return err
+	//	}
+	//}
 	return nil
 }
 
@@ -322,39 +322,39 @@ func (d *MemKV) SaveSnapshot(ctx interface{},
 // the existing DB to complete the recovery.
 func (d *MemKV) RecoverFromSnapshot(r io.Reader,
 	done <-chan struct{}) error {
-	if d.closed {
-		panic("recover from snapshot called after Close()")
-	}
-
-	sz := make([]byte, 8)
-	if _, err := io.ReadFull(r, sz); err != nil {
-		return err
-	}
-	total := binary.LittleEndian.Uint64(sz)
-	for i := uint64(0); i < total; i++ {
-		if _, err := io.ReadFull(r, sz); err != nil {
-			return err
-		}
-		toRead := binary.LittleEndian.Uint64(sz)
-		data := make([]byte, toRead)
-		if _, err := io.ReadFull(r, data); err != nil {
-			return err
-		}
-		dataKv := &KVData{}
-		if err := json.Unmarshal(data, dataKv); err != nil {
-			panic(err)
-		}
-		d.kvStore[dataKv.Key] = dataKv.Val
-	}
-
-	newLastApplied, err := d.queryAppliedIndex()
-	if err != nil {
-		panic(err)
-	}
-	if d.lastApplied > newLastApplied {
-		panic("last applied not moving forward")
-	}
-	d.lastApplied = newLastApplied
+	//if d.closed {
+	//	panic("recover from snapshot called after Close()")
+	//}
+	//
+	//sz := make([]byte, 8)
+	//if _, err := io.ReadFull(r, sz); err != nil {
+	//	return err
+	//}
+	//total := binary.LittleEndian.Uint64(sz)
+	//for i := uint64(0); i < total; i++ {
+	//	if _, err := io.ReadFull(r, sz); err != nil {
+	//		return err
+	//	}
+	//	toRead := binary.LittleEndian.Uint64(sz)
+	//	data := make([]byte, toRead)
+	//	if _, err := io.ReadFull(r, data); err != nil {
+	//		return err
+	//	}
+	//	dataKv := &KVData{}
+	//	if err := json.Unmarshal(data, dataKv); err != nil {
+	//		panic(err)
+	//	}
+	//	d.kvStore[dataKv.Key] = dataKv.Val
+	//}
+	//
+	//newLastApplied, err := d.queryAppliedIndex()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//if d.lastApplied > newLastApplied {
+	//	panic("last applied not moving forward")
+	//}
+	//d.lastApplied = newLastApplied
 	return nil
 }
 

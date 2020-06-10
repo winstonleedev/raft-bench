@@ -24,13 +24,11 @@ func main() {
 	join := flag.Bool("join", false, "join an existing cluster")
 	test := flag.Bool("test", false, "use this node for r/w tests")
 
-	var inMem bool
 	var httpAddr string
 	var raftAddr string
 	var joinAddr string
 	var nodeID string
 
-	flag.BoolVar(&inMem, "inmem", false, "Use in-memory storage for Raft")
 	flag.StringVar(&httpAddr, "haddr", DefaultHTTPAddr, "Set the HTTP bind address")
 	flag.StringVar(&raftAddr, "raddr", DefaultRaftAddr, "Set Raft bind address")
 	flag.StringVar(&joinAddr, "joinaddr", "", "Set join address, if any")
@@ -48,7 +46,7 @@ func main() {
 	case "etcd":
 		etcd.Main(*cluster, *id, *kvPort, *join, *test)
 	case "hashi":
-		hashicorp.Main(inMem, httpAddr, raftAddr, joinAddr, nodeID, *test)
+		hashicorp.Main(true, httpAddr, raftAddr, joinAddr, nodeID, *test)
 	case "dragonboat":
 		dragonboat.Main(*id, *addr, *join, *test)
 	}

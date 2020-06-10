@@ -9,7 +9,7 @@ raft-bench is an example usage of etcd's [raft library](../../raft). It provides
 ### Install prequisites
 
 ```bash
-sudo apt install -y nano librocksdb-dev golang
+sudo apt install -y nano librocksdb-dev golang psmisc
 ```
 
 

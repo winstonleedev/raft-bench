@@ -7,10 +7,11 @@ import (
 )
 
 const (
-	numKeys = 1
-	mil     = 1000000
-	runs    = 3
-	wait    = 3000
+	numKeys   = 1
+	mil       = 1000000
+	runs      = 3
+	wait      = 3000
+	firstWait = 0
 )
 
 func Bench(test bool, read func(string), write func(string, string)) {
@@ -19,6 +20,7 @@ func Bench(test bool, read func(string), write func(string, string)) {
 		return
 	}
 
+	time.Sleep(firstWait)
 	log.Printf("Starting benchmark...\n")
 	for i := 0; i < runs; i++ {
 		time.Sleep(wait)

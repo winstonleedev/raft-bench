@@ -131,6 +131,10 @@ func (s *Store) Set(key, value string) error {
 	return f.Error()
 }
 
+func (s *Store) IsLeader() bool {
+	return s.raft.State() == raft.Leader
+}
+
 // Delete deletes the given key.
 func (s *Store) Delete(key string) error {
 	if s.raft.State() != raft.Leader {

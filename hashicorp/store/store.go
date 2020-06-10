@@ -79,8 +79,11 @@ func (s *Store) Open(enableSingle bool, localID string) error {
 	}
 
 	// Create the log store and stable store.
-	logStore := raft.NewInmemStore()
-	stableStore := raft.NewInmemStore()
+	var logStore raft.LogStore
+	var stableStore raft.StableStore
+
+	logStore = raft.NewInmemStore()
+	stableStore = raft.NewInmemStore()
 
 	// Instantiate the Raft systems.
 	ra, err := raft.NewRaft(config, (*fsm)(s), logStore, stableStore, snapshots, transport)
@@ -131,10 +134,6 @@ func (s *Store) Set(key, value string) error {
 	return f.Error()
 }
 
-func (s *Store) IsLeader() bool {
-	return s.raft.State() == raft.Leader
-}
-
 // Delete deletes the given key.
 func (s *Store) Delete(key string) error {
 	if s.raft.State() != raft.Leader {
@@ -157,7 +156,6 @@ func (s *Store) Delete(key string) error {
 // Join joins a node, identified by nodeID and located at addr, to this store.
 // The node must be ready to respond to Raft communications at that address.
 func (s *Store) Join(nodeID, addr string) error {
-
 	s.logger.Printf("received join request for remote node %s at %s", nodeID, addr)
 
 	configFuture := s.raft.GetConfiguration()
@@ -184,8 +182,6 @@ func (s *Store) Join(nodeID, addr string) error {
 		}
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	f := s.raft.AddVoter(raft.ServerID(nodeID), raft.ServerAddress(addr), 0, 0)
 	if f.Error() != nil {
 		return f.Error()

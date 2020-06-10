@@ -10,11 +10,12 @@ import (
 
 const (
 	numKeys   = 1
-	mil       = 1000000 // Run the benchmark numKeys * mil times
-	runs      = 10      // Number of time to run the benchmark
-	wait      = 3000    // Time to wait before each step and before read / write
-	firstWait = 10000   // Time to wait before starting benchmark
-	step      = 10      // If read fails, wait this much before trying to avoid overloading the system
+	mil       = 100000 // Run the benchmark numKeys * mil times
+	runs      = 10     // Number of time to run the benchmark
+	wait      = 3000   // Time to wait before each step and before read / write
+	firstWait = 10000  // Time to wait before starting benchmark
+	step      = 100    // If read fails, wait this much before trying to avoid overloading the system
+	maxTries  = 10     // Only retry an operation this many times
 )
 
 func Bench(test bool, logFile string, read func(string) bool, write func(string, string) bool) {
@@ -40,12 +41,16 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 		success := 0
 		for k < numKeys*mil {
 			v := rand.Int()
-			ok := write(string(k), string(v))
-			if ok {
-				success++
-			} else {
+			tries := 0
+			for ok := false; !ok; ok = write(string(k), string(v)) {
 				time.Sleep(step)
+				tries++
+				if tries > maxTries {
+					success--
+					break
+				}
 			}
+			success++
 			k += 1
 		}
 		_, _ = f.WriteString(fmt.Sprintf("write,%v,%v,%v,%v\n", i+1, success, numKeys*mil, time.Since(start).Microseconds()))
@@ -55,12 +60,16 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 		k = 0
 		success = 0
 		for k < numKeys*mil {
-			ok := read(string(k))
-			if ok {
-				success++
-			} else {
+			tries := 0
+			for ok := false; !ok; ok = read(string(k)) {
 				time.Sleep(step)
+				tries++
+				if tries > maxTries {
+					success--
+					break
+				}
 			}
+			success++
 			k += 1
 		}
 		_, _ = f.WriteString(fmt.Sprintf("read,%v,%v,%v,%v\n", i+1, success, numKeys*mil, time.Since(start).Microseconds()))

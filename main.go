@@ -33,7 +33,7 @@ func main() {
 	flag.BoolVar(&inmem, "inmem", false, "Use in-memory storage for Raft")
 	flag.StringVar(&httpAddr, "haddr", DefaultHTTPAddr, "Set the HTTP bind address")
 	flag.StringVar(&raftAddr, "raddr", DefaultRaftAddr, "Set Raft bind address")
-	flag.StringVar(&joinAddr, "joinport", "", "Set join address, if any")
+	flag.StringVar(&joinAddr, "joinaddr", "", "Set join address, if any")
 	flag.StringVar(&nodeID, "nodeid", "", "Node ID")
 
 	addr := flag.String("addr", "", "Nodehost address")

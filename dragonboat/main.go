@@ -80,7 +80,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stdout, "get key\n")
 }
 
-func Main(nodeID int, addr string, join bool, test bool, logFile string) {
+func Main(nodeID int, addr string, join bool, test util.TestParams) {
 	if len(addr) == 0 && nodeID != 1 && nodeID != 2 && nodeID != 3 {
 		fmt.Fprintf(os.Stderr, "node id must be 1, 2 or 3 when address is not specified\n")
 		os.Exit(1)
@@ -136,7 +136,7 @@ func Main(nodeID int, addr string, join bool, test bool, logFile string) {
 		cs := nh.GetNoOPSession(exampleClusterID)
 		ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 
-		util.Bench(test, logFile, func(k string) bool {
+		util.Bench(test, func(k string) bool {
 			_, err := nh.SyncRead(ctx, exampleClusterID, []byte(k))
 			if err != nil {
 				return false

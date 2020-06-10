@@ -23,7 +23,7 @@ import (
 )
 
 // Main function
-func Main(cluster string, id int, _ int, join bool, test bool, logFile string) {
+func Main(cluster string, id int, _ int, join bool, test util.TestParams) {
 	proposeC := make(chan string)
 	defer close(proposeC)
 	confChangeC := make(chan raftpb.ConfChange)
@@ -36,7 +36,7 @@ func Main(cluster string, id int, _ int, join bool, test bool, logFile string) {
 
 	kvs = newKVStore(<-snapshotterReady, proposeC, commitC, errorC)
 
-	util.Bench(test, logFile, func(k string) bool {
+	util.Bench(test, func(k string) bool {
 		kvs.Lookup(k)
 		return true
 	}, func(k string, v string) bool {

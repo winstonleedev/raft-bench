@@ -4,10 +4,12 @@ import (
 	"flag"
 	"log"
 	"os"
+	"time"
 
 	"github.com/thanhphu/raftbench/dragonboat"
 	"github.com/thanhphu/raftbench/etcd"
 	"github.com/thanhphu/raftbench/hashicorp"
+	"github.com/thanhphu/raftbench/util"
 )
 
 // Command line defaults
@@ -22,8 +24,15 @@ func main() {
 	id := flag.Int("id", 1, "node ID")
 	kvPort := flag.Int("port", 9121, "key-value server port")
 	join := flag.Bool("join", false, "join an existing cluster")
-	test := flag.Bool("test", false, "use this node for r/w tests")
+	enabled := flag.Bool("test", false, "use this node for r/w tests")
 	logFile := flag.String("logfile", "result.csv", "name of csv log file (used together with --test)")
+	numKeys := flag.Int("numKeys", 1, "Run the benchmark numKeys * mil times")
+	mil := flag.Int("mil", 1000000, "Run the benchmark numKeys * mil times")
+	runs := flag.Int("runs", 10, "Number of time to run the benchmark")
+	wait := flag.Int("wait", 3000, "Time to wait before each step and before read / write")
+	firstWait := flag.Int("firstWait", 10000, "Time to wait before starting benchmark")
+	step := flag.Int("step", 100, "If read fails, wait this much before trying to avoid overloading the system")
+	maxTries := flag.Int("maxTries", 10, "Only retry an operation this many times")
 
 	var httpAddr string
 	var raftAddr string
@@ -43,12 +52,25 @@ func main() {
 	}
 
 	flag.Parse()
+
+	testParams := &util.TestParams{
+		NumKeys:   *numKeys,
+		Mil:       *mil,
+		Runs:      *runs,
+		Wait:      time.Duration(*wait) * time.Millisecond,
+		FirstWait: time.Duration(*firstWait) * time.Millisecond,
+		Step:      time.Duration(*step) * time.Millisecond,
+		MaxTries:  *maxTries,
+		Enabled:   *enabled,
+		LogFile:   *logFile,
+	}
+
 	switch *engine {
 	case "etcd":
-		etcd.Main(*cluster, *id, *kvPort, *join, *test, *logFile)
+		etcd.Main(*cluster, *id, *kvPort, *join, *testParams)
 	case "hashi":
-		hashicorp.Main(httpAddr, raftAddr, joinAddr, nodeID, *test, *logFile)
+		hashicorp.Main(httpAddr, raftAddr, joinAddr, nodeID, *testParams)
 	case "dragonboat":
-		dragonboat.Main(*id, *addr, *join, *test, *logFile)
+		dragonboat.Main(*id, *addr, *join, *testParams)
 	}
 }

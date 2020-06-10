@@ -8,44 +8,46 @@ import (
 	"time"
 )
 
-const (
-	numKeys   = 1
-	mil       = 1000000                  // Run the benchmark numKeys * mil times
-	runs      = 10                       // Number of time to run the benchmark
-	wait      = 3000 * time.Millisecond  // Time to wait before each step and before read / write
-	firstWait = 10000 * time.Millisecond // Time to wait before starting benchmark
-	step      = 100 * time.Millisecond   // If read fails, wait this much before trying to avoid overloading the system
-	maxTries  = 10                       // Only retry an operation this many times
-)
+type TestParams struct {
+	NumKeys   int
+	Mil       int
+	Runs      int
+	Wait      time.Duration
+	FirstWait time.Duration
+	Step      time.Duration
+	MaxTries  int
+	Enabled   bool
+	LogFile   string
+}
 
-func Bench(test bool, logFile string, read func(string) bool, write func(string, string) bool) {
+func Bench(testParams TestParams, read func(string) bool, write func(string, string) bool) {
 	defer WaitForCtrlC()
-	if !test {
+	if !testParams.Enabled {
 		return
 	}
 
-	f, err := os.Create(logFile)
+	f, err := os.Create(testParams.LogFile)
 	if err != nil {
 		log.Fatal("unable to create csv log")
 	}
 	defer f.Close()
 
-	time.Sleep(firstWait)
+	time.Sleep(testParams.FirstWait)
 	log.Printf("Starting benchmark...\n")
-	for i := 0; i < runs; i++ {
-		log.Printf("BENCHMARK %v OF %v\n", i+1, runs)
-		time.Sleep(wait)
+	for i := 0; i < testParams.Runs; i++ {
+		log.Printf("BENCHMARK %v OF %v\n", i+1, testParams.Runs)
+		time.Sleep(testParams.Wait)
 
 		start := time.Now()
 		k := 0
 		success := 0
-		for k < numKeys*mil {
+		for k < testParams.NumKeys*testParams.Mil {
 			v := rand.Int()
 			tries := 0
 			for ok := false; !ok; ok = write(string(k), string(v)) {
-				time.Sleep(step)
+				time.Sleep(testParams.Step)
 				tries++
-				if tries > maxTries {
+				if tries > testParams.MaxTries {
 					success--
 					break
 				}
@@ -53,18 +55,18 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 			success++
 			k += 1
 		}
-		_, _ = f.WriteString(fmt.Sprintf("write,%v,%v,%v,%v\n", i+1, success, numKeys*mil, time.Since(start).Microseconds()))
+		_, _ = f.WriteString(fmt.Sprintf("write,%v,%v,%v,%v\n", i+1, success, testParams.NumKeys*testParams.Mil, time.Since(start).Microseconds()))
 
-		time.Sleep(wait)
+		time.Sleep(testParams.Wait)
 		start = time.Now()
 		k = 0
 		success = 0
-		for k < numKeys*mil {
+		for k < testParams.NumKeys*testParams.Mil {
 			tries := 0
 			for ok := false; !ok; ok = read(string(k)) {
-				time.Sleep(step)
+				time.Sleep(testParams.Step)
 				tries++
-				if tries > maxTries {
+				if tries > testParams.MaxTries {
 					success--
 					break
 				}
@@ -72,7 +74,7 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 			success++
 			k += 1
 		}
-		_, _ = f.WriteString(fmt.Sprintf("read,%v,%v,%v,%v\n", i+1, success, numKeys*mil, time.Since(start).Microseconds()))
+		_, _ = f.WriteString(fmt.Sprintf("read,%v,%v,%v,%v\n", i+1, success, testParams.NumKeys*testParams.Mil, time.Since(start).Microseconds()))
 	}
 	log.Printf("BENCHMARK COMPLETE\n")
 }

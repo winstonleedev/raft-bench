@@ -40,14 +40,12 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 		success := 0
 		for k < numKeys*mil {
 			v := rand.Int()
-			go func() {
-				ok := write(string(k), string(v))
-				if ok {
-					success++
-				} else {
-					time.Sleep(step)
-				}
-			}()
+			ok := write(string(k), string(v))
+			if ok {
+				success++
+			} else {
+				time.Sleep(step)
+			}
 			k += 1
 		}
 		_, _ = f.WriteString(fmt.Sprintf("write,%v,%v,%v,%v\n", i+1, success, numKeys*mil, time.Since(start).Microseconds()))
@@ -57,14 +55,12 @@ func Bench(test bool, logFile string, read func(string) bool, write func(string,
 		k = 0
 		success = 0
 		for k < numKeys*mil {
-			go func() {
-				ok := read(string(k))
-				if ok {
-					success++
-				} else {
-					time.Sleep(step)
-				}
-			}()
+			ok := read(string(k))
+			if ok {
+				success++
+			} else {
+				time.Sleep(step)
+			}
 			k += 1
 		}
 		_, _ = f.WriteString(fmt.Sprintf("read,%v,%v,%v,%v\n", i+1, success, numKeys*mil, time.Since(start).Microseconds()))

@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/thanhphu/raftbench/dragonboat"
@@ -37,7 +37,7 @@ func main() {
 	addr := flag.String("addr", "", "Nodehost address")
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] <raft-data-path> \n", os.Args[0])
+		log.Printf("Usage: %s [options] <raft-data-path> \n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
@@ -46,7 +46,7 @@ func main() {
 	case "etcd":
 		etcd.Main(*cluster, *id, *kvPort, *join, *test)
 	case "hashi":
-		hashicorp.Main(true, httpAddr, raftAddr, joinAddr, nodeID, *test)
+		hashicorp.Main(httpAddr, raftAddr, joinAddr, nodeID, *test)
 	case "dragonboat":
 		dragonboat.Main(*id, *addr, *join, *test)
 	}

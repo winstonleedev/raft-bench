@@ -14,21 +14,25 @@ import (
 	"github.com/thanhphu/raftbench/util"
 )
 
-func Main(inmem bool, httpAddr string, raftAddr string, joinAddr string, nodeID string, test bool) {
+func Main(httpAddr string, raftAddr string, joinAddr string, nodeID string, test bool) {
 	if flag.NArg() == 0 {
-		fmt.Fprintf(os.Stderr, "No Raft storage directory specified\n")
+		log.Printf("No Raft storage directory specified\n")
 		os.Exit(1)
 	}
 
 	// Ensure Raft storage exists.
 	raftDir := flag.Arg(0)
 	if raftDir == "" {
-		fmt.Fprintf(os.Stderr, "No Raft storage directory specified\n")
+		log.Printf("No Raft storage directory specified\n")
 		os.Exit(1)
 	}
-	os.MkdirAll(raftDir, 0700)
+	err := os.MkdirAll(raftDir, 0700)
+	if err != nil {
+		log.Printf("Unable to create WAL directory\n")
+		os.Exit(1)
+	}
 
-	s := store.New(inmem)
+	s := store.New(true)
 	s.RaftDir = raftDir
 	s.RaftBind = raftAddr
 	if err := s.Open(joinAddr == "", nodeID); err != nil {
@@ -47,7 +51,7 @@ func Main(inmem bool, httpAddr string, raftAddr string, joinAddr string, nodeID 
 		}
 	}
 
-	log.Println("hraftd started successfully")
+	log.Println("raftbench started successfully")
 
 	util.Bench(test, func(k string) {
 		_, err := s.Get(k)
@@ -71,7 +75,11 @@ func join(joinAddr, raftAddr, nodeID string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.Printf("Error closing")
+		}
+	}()
 
 	return nil
 }

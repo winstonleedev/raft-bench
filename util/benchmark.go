@@ -1,7 +1,7 @@
 package util
 
 import (
-	"fmt"
+	"log"
 	"math/rand"
 	"time"
 )
@@ -29,7 +29,7 @@ func Bench(test bool, read func(string), write func(string, string)) {
 			go write(string(k), string(v))
 			k += 1
 		}
-		fmt.Printf("Write test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
+		log.Printf("Write test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
 
 		time.Sleep(wait)
 		start = time.Now()
@@ -38,6 +38,6 @@ func Bench(test bool, read func(string), write func(string, string)) {
 			go read(string(k))
 			k += 1
 		}
-		fmt.Printf("Read test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
+		log.Printf("Read test, %v, %v, %v\n", i+1, numKeys*mil, time.Since(start))
 	}
 }

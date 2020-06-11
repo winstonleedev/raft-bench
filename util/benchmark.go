@@ -39,42 +39,36 @@ func Bench(testParams TestParams, read func(string) bool, write func(string, str
 		time.Sleep(testParams.Wait)
 
 		start := time.Now()
-		k := 0
-		success := 0
-		for k < testParams.NumKeys*testParams.Mil {
+		failure := 0
+		for k := 0; k < testParams.NumKeys*testParams.Mil; k++ {
 			v := rand.Int()
 			tries := 0
 			for ok := false; !ok; ok = write(string(k), string(v)) {
 				time.Sleep(testParams.Step)
 				tries++
 				if tries > testParams.MaxTries {
-					success--
 					break
 				}
 			}
-			success++
-			k += 1
+			failure += tries
 		}
-		_, _ = f.WriteString(fmt.Sprintf("write,%v,%v,%v,%v\n", i+1, success, testParams.NumKeys*testParams.Mil, time.Since(start).Microseconds()))
+		_, _ = f.WriteString(fmt.Sprintf("write,%v,%v,%v,%v\n", i+1, failure, testParams.NumKeys*testParams.Mil, time.Since(start).Microseconds()))
 
 		time.Sleep(testParams.Wait)
 		start = time.Now()
-		k = 0
-		success = 0
-		for k < testParams.NumKeys*testParams.Mil {
+		failure = 0
+		for k := 0; k < testParams.NumKeys*testParams.Mil; k++ {
 			tries := 0
 			for ok := false; !ok; ok = read(string(k)) {
 				time.Sleep(testParams.Step)
 				tries++
 				if tries > testParams.MaxTries {
-					success--
 					break
 				}
 			}
-			success++
-			k += 1
+			failure += tries
 		}
-		_, _ = f.WriteString(fmt.Sprintf("read,%v,%v,%v,%v\n", i+1, success, testParams.NumKeys*testParams.Mil, time.Since(start).Microseconds()))
+		_, _ = f.WriteString(fmt.Sprintf("read,%v,%v,%v,%v\n", i+1, failure, testParams.NumKeys*testParams.Mil, time.Since(start).Microseconds()))
 	}
 	log.Printf("BENCHMARK COMPLETE\n")
 }

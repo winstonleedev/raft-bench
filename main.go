@@ -71,6 +71,6 @@ func main() {
 	case "hashi":
 		hashicorp.Main(httpAddr, raftAddr, joinAddr, nodeID, *testParams)
 	case "dragonboat":
-		dragonboat.Main(*id, *addr, *join, *testParams)
+		dragonboat.Main(*cluster, *id, *addr, *join, *testParams)
 	}
 }

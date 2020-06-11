@@ -32,7 +32,6 @@ import (
 	"github.com/lni/dragonboat/v3"
 	"github.com/lni/dragonboat/v3/config"
 	"github.com/lni/dragonboat/v3/logger"
-	"github.com/lni/goutils/syncutil"
 
 	"github.com/thanhphu/raftbench/util"
 )
@@ -46,15 +45,6 @@ const (
 const (
 	PUT RequestType = iota
 	GET
-)
-
-var (
-	// initial nodes count is fixed to three, their addresses are also fixed
-	addresses = []string{
-		"raft0:63000",
-		"raft1:63000",
-		"raft2:63000",
-	}
 )
 
 func parseCommand(msg string) (RequestType, string, string, bool) {
@@ -80,7 +70,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stdout, "get key\n")
 }
 
-func Main(nodeID int, addr string, join bool, test util.TestParams) {
+func Main(cluster string, nodeID int, addr string, join bool, test util.TestParams) {
 	if len(addr) == 0 && nodeID != 1 && nodeID != 2 && nodeID != 3 {
 		fmt.Fprintf(os.Stderr, "node id must be 1, 2 or 3 when address is not specified\n")
 		os.Exit(1)
@@ -91,6 +81,7 @@ func Main(nodeID int, addr string, join bool, test util.TestParams) {
 	}
 	initialMembers := make(map[uint64]string)
 	if !join {
+		addresses := strings.Split(strings.Replace(cluster, "http://", "", -1), ",")
 		for idx, v := range addresses {
 			initialMembers[uint64(idx+1)] = v
 		}
@@ -127,36 +118,33 @@ func Main(nodeID int, addr string, join bool, test util.TestParams) {
 	if err != nil {
 		panic(err)
 	}
-	if err := nh.StartOnDiskCluster(initialMembers, join, NewMemKV, rc); err != nil {
+	if err := nh.StartCluster(initialMembers, join, NewMemKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)
 		os.Exit(1)
 	}
-	raftStopper := syncutil.NewStopper()
-	raftStopper.RunWorker(func() {
-		cs := nh.GetNoOPSession(exampleClusterID)
-		ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 
-		util.Bench(test, func(k string) bool {
-			_, err := nh.SyncRead(ctx, exampleClusterID, []byte(k))
-			if err != nil {
-				return false
-			}
-			return true
-		}, func(k string, v string) bool {
-			kv := &KVData{
-				Key: k,
-				Val: v,
-			}
-			data, err := json.Marshal(kv)
-			if err != nil {
-				return false
-			}
-			_, err = nh.SyncPropose(ctx, cs, data)
-			if err != nil {
-				return false
-			}
-			return true
-		})
+	cs := nh.GetNoOPSession(exampleClusterID)
+	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+
+	util.Bench(test, func(k string) bool {
+		_, err := nh.SyncRead(ctx, exampleClusterID, k)
+		if err != nil {
+			return false
+		}
+		return true
+	}, func(k string, v string) bool {
+		kv := &KVData{
+			Key: k,
+			Val: v,
+		}
+		data, err := json.Marshal(kv)
+		if err != nil {
+			return false
+		}
+		_, err = nh.SyncPropose(ctx, cs, data)
+		if err != nil {
+			return false
+		}
+		return true
 	})
-	raftStopper.Wait()
 }

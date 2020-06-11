@@ -15,27 +15,17 @@
 package dragonboat
 
 import (
-	"bytes"
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sync"
-	"time"
 	"unsafe"
 
 	sm "github.com/lni/dragonboat/v3/statemachine"
-)
-
-const (
-	currentDBFilename  string = "current"
-	updatingDBFilename string = "current.updating"
 )
 
 func syncDir(dir string) (err error) {
@@ -62,126 +52,8 @@ func syncDir(dir string) (err error) {
 }
 
 type KVData struct {
-	Key string
-	Val string
-}
-
-// functions below are used to manage the current data directory of RocksDB DB.
-func isNewRun(dir string) bool {
-	fp := filepath.Join(dir, currentDBFilename)
-	if _, err := os.Stat(fp); os.IsNotExist(err) {
-		return true
-	}
-	return false
-}
-
-func getNewRandomDBDirName(dir string) string {
-	part := "%d_%d"
-	rn := rand.Uint64()
-	ct := time.Now().UnixNano()
-	return filepath.Join(dir, fmt.Sprintf(part, rn, ct))
-}
-
-func replaceCurrentDBFile(dir string) error {
-	fp := filepath.Join(dir, currentDBFilename)
-	tmpFp := filepath.Join(dir, updatingDBFilename)
-	if err := os.Rename(tmpFp, fp); err != nil {
-		return err
-	}
-	return syncDir(dir)
-}
-
-func saveCurrentDBDirName(dir string, dbdir string) error {
-	h := md5.New()
-	if _, err := h.Write([]byte(dbdir)); err != nil {
-		return err
-	}
-	fp := filepath.Join(dir, updatingDBFilename)
-	f, err := os.Create(fp)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			panic(err)
-		}
-		if err := syncDir(dir); err != nil {
-			panic(err)
-		}
-	}()
-	if _, err := f.Write(h.Sum(nil)[:8]); err != nil {
-		return err
-	}
-	if _, err := f.Write([]byte(dbdir)); err != nil {
-		return err
-	}
-	if err := f.Sync(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func getCurrentDBDirName(dir string) (string, error) {
-	fp := filepath.Join(dir, currentDBFilename)
-	f, err := os.OpenFile(fp, os.O_RDONLY, 0755)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			panic(err)
-		}
-	}()
-	data, err := ioutil.ReadAll(f)
-	if err != nil {
-		return "", err
-	}
-	if len(data) <= 8 {
-		panic("corrupted content")
-	}
-	crc := data[:8]
-	content := data[8:]
-	h := md5.New()
-	if _, err := h.Write(content); err != nil {
-		return "", err
-	}
-	if !bytes.Equal(crc, h.Sum(nil)[:8]) {
-		panic("corrupted content with not matched crc")
-	}
-	return string(content), nil
-}
-
-func createNodeDataDir(dir string) error {
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-	return syncDir(filepath.Dir(dir))
-}
-
-func cleanupNodeDataDir(dir string) error {
-	os.RemoveAll(filepath.Join(dir, updatingDBFilename))
-	dbdir, err := getCurrentDBDirName(dir)
-	if err != nil {
-		return err
-	}
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-	for _, fi := range files {
-		if !fi.IsDir() {
-			continue
-		}
-		fmt.Printf("dbdir %s, fi.name %s, dir %s\n", dbdir, fi.Name(), dir)
-		toDelete := filepath.Join(dir, fi.Name())
-		if toDelete != dbdir {
-			fmt.Printf("removing %s\n", toDelete)
-			if err := os.RemoveAll(toDelete); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	Key interface{}
+	Val interface{}
 }
 
 // MemKV is a state machine that implements the IOnDiskStateMachine interface.
@@ -189,35 +61,20 @@ func cleanupNodeDataDir(dir string) error {
 // it is used as an example, it is implemented using the most basic features
 // common in most key-value stores. This is NOT a benchmark program.
 type MemKV struct {
-	clusterID   uint64
-	nodeID      uint64
-	lastApplied uint64
-	db          unsafe.Pointer
-	closed      bool
-	aborted     bool
-
-	mu      sync.RWMutex
-	kvStore map[interface{}]string // current committed key-value pairs
+	clusterID uint64
+	nodeID    uint64
+	db        unsafe.Pointer
+	kvStore   map[interface{}]interface{} // current committed key-value pairs
 }
 
 // NewMemKV creates a new disk kv test state machine.
-func NewMemKV(clusterID uint64, nodeID uint64) sm.IOnDiskStateMachine {
+func NewMemKV(clusterID uint64, nodeID uint64) sm.IStateMachine {
 	d := &MemKV{
 		clusterID: clusterID,
 		nodeID:    nodeID,
-		kvStore:   make(map[interface{}]string),
+		kvStore:   make(map[interface{}]interface{}),
 	}
 	return d
-}
-
-func (d *MemKV) queryAppliedIndex() (uint64, error) {
-	return 0, nil
-}
-
-// Open opens the state machine and return the index of the last Raft Log entry
-// already updated into the state machine.
-func (d *MemKV) Open(stopc <-chan struct{}) (uint64, error) {
-	return 0, nil
 }
 
 // Lookup queries the state machine.
@@ -231,130 +88,48 @@ func (d *MemKV) Lookup(key interface{}) (interface{}, error) {
 // writes (db.wo.Sync=True). To get higher throughput, you can implement the
 // Sync() method below and choose not to synchronize for every Update(). Sync()
 // will periodically called by Dragonboat to synchronize the state.
-func (d *MemKV) Update(ents []sm.Entry) ([]sm.Entry, error) {
-	if d.aborted {
-		panic("update() called after abort set to true")
+func (d *MemKV) Update(data []byte) (sm.Result, error) {
+	kv := &KVData{}
+	err := json.Unmarshal(data, kv)
+	if err == nil {
+		d.kvStore[kv.Key] = kv.Val
 	}
-	if d.closed {
-		panic("update called after Close()")
-	}
-	for idx, e := range ents {
-		dataKV := &KVData{}
-		if err := json.Unmarshal(e.Cmd, dataKV); err != nil {
-			panic(err)
-		}
-		d.kvStore[dataKV.Key] = dataKV.Val
-		ents[idx].Result = sm.Result{Value: uint64(len(ents[idx].Cmd))}
-	}
-	// save the applied index to the DB.
-	if d.lastApplied >= ents[len(ents)-1].Index {
-		panic("lastApplied not moving forward")
-	}
-	d.lastApplied = ents[len(ents)-1].Index
-	return ents, nil
-}
-
-// Sync synchronizes all in-core state of the state machine. Since the Update
-// method in this example already does that every time when it is invoked, the
-// Sync method here is a NoOP.
-func (d *MemKV) Sync() error {
-	return nil
-}
-
-// PrepareSnapshot prepares snapshotting. PrepareSnapshot is responsible to
-// capture a state identifier that identifies a point in time state of the
-// underlying data. In this example, we use RocksDB's snapshot feature to
-// achieve that.
-func (d *MemKV) PrepareSnapshot() (interface{}, error) {
-	if d.closed {
-		panic("prepare snapshot called after Close()")
-	}
-	if d.aborted {
-		panic("prepare snapshot called after abort")
-	}
-	return d, nil
-}
-
-// saveToWriter saves all existing key-value pairs to the provided writer.
-// As an example, we use the most straight forward way to implement this.
-func (d *MemKV) saveToWriter(w io.Writer) error {
-	//sz := make([]byte, 8)
-	//binary.LittleEndian.PutUint64(sz, uint64(len(d.kvStore)))
-	//if _, err := w.Write(sz); err != nil {
-	//	return err
-	//}
-	//for key, val := range d.kvStore {
-	//	dataKv := &KVData{
-	//		Key: fmt.Sprintf("%v", key),
-	//		Val: val,
-	//	}
-	//	data, err := json.Marshal(dataKv)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	binary.LittleEndian.PutUint64(sz, uint64(len(data)))
-	//	if _, err := w.Write(sz); err != nil {
-	//		return err
-	//	}
-	//	if _, err := w.Write(data); err != nil {
-	//		return err
-	//	}
-	//}
-	return nil
+	return sm.Result{Value: uint64(len(data)), Data: data}, err
 }
 
 // SaveSnapshot saves the state machine state identified by the state
 // identifier provided by the input ctx parameter. Note that SaveSnapshot
 // is not suppose to save the latest state.
-func (d *MemKV) SaveSnapshot(ctx interface{},
-	w io.Writer, done <-chan struct{}) error {
-	if d.closed {
-		panic("prepare snapshot called after Close()")
+func (d *MemKV) SaveSnapshot(w io.Writer,
+	fileCollection sm.ISnapshotFileCollection,
+	done <-chan struct{}) error {
+	data, err := json.Marshal(d)
+	if err != nil {
+		panic(err)
 	}
-	if d.aborted {
-		panic("prepare snapshot called after abort")
+	_, err = w.Write(data)
+	if err != nil {
+		return err
 	}
-	return d.saveToWriter(w)
+	return nil
 }
 
 // RecoverFromSnapshot recovers the state machine state from snapshot. The
 // snapshot is recovered into a new DB first and then atomically swapped with
 // the existing DB to complete the recovery.
 func (d *MemKV) RecoverFromSnapshot(r io.Reader,
+	files []sm.SnapshotFile,
 	done <-chan struct{}) error {
-	//if d.closed {
-	//	panic("recover from snapshot called after Close()")
-	//}
-	//
-	//sz := make([]byte, 8)
-	//if _, err := io.ReadFull(r, sz); err != nil {
-	//	return err
-	//}
-	//total := binary.LittleEndian.Uint64(sz)
-	//for i := uint64(0); i < total; i++ {
-	//	if _, err := io.ReadFull(r, sz); err != nil {
-	//		return err
-	//	}
-	//	toRead := binary.LittleEndian.Uint64(sz)
-	//	data := make([]byte, toRead)
-	//	if _, err := io.ReadFull(r, data); err != nil {
-	//		return err
-	//	}
-	//	dataKv := &KVData{}
-	//	if err := json.Unmarshal(data, dataKv); err != nil {
-	//		panic(err)
-	//	}
-	//	d.kvStore[dataKv.Key] = dataKv.Val
-	//}
-	//
-	//newLastApplied, err := d.queryAppliedIndex()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//if d.lastApplied > newLastApplied {
-	//	panic("last applied not moving forward")
-	//}
-	//d.lastApplied = newLastApplied
+	var sn MemKV
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, &sn)
+	if err != nil {
+		panic("failed to unmarshal snapshot")
+	}
+
 	return nil
 }
 
@@ -366,6 +141,7 @@ func (d *MemKV) Close() error {
 // GetHash returns a hash value representing the state of the state machine.
 func (d *MemKV) GetHash() (uint64, error) {
 	h := md5.New()
-	md5sum := h.Sum(nil)
+	data, _ := json.Marshal(d)
+	md5sum := h.Sum(data)
 	return binary.LittleEndian.Uint64(md5sum[:8]), nil
 }

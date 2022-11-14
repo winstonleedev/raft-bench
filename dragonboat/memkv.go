@@ -25,7 +25,7 @@ import (
 	"runtime"
 	"unsafe"
 
-	sm "github.com/lni/dragonboat/v3/statemachine"
+	sm "github.com/lni/dragonboat/v4/statemachine"
 )
 
 func syncDir(dir string) (err error) {
@@ -88,13 +88,13 @@ func (d *MemKV) Lookup(key interface{}) (interface{}, error) {
 // writes (db.wo.Sync=True). To get higher throughput, you can implement the
 // Sync() method below and choose not to synchronize for every Update(). Sync()
 // will periodically called by Dragonboat to synchronize the state.
-func (d *MemKV) Update(data []byte) (sm.Result, error) {
+func (d *MemKV) Update(e sm.Entry) (sm.Result, error) {
 	kv := &KVData{}
-	err := json.Unmarshal(data, kv)
-	if err == nil {
+	err := json.Unmarshal(e.Cmd, kv)
+	if err != nil {
 		d.kvStore[kv.Key] = kv.Val
 	}
-	return sm.Result{Value: uint64(len(data)), Data: data}, err
+	return sm.Result{Value: uint64(len(e.Cmd)), Data: e.Cmd}, err
 }
 
 // SaveSnapshot saves the state machine state identified by the state

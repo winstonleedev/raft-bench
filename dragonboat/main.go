@@ -15,6 +15,7 @@
 /*
 ondisk is an example program for dragonboat's on disk state machine.
 */
+
 package dragonboat
 
 import (
@@ -29,9 +30,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lni/dragonboat/v3"
-	"github.com/lni/dragonboat/v3/config"
-	"github.com/lni/dragonboat/v3/logger"
+	"github.com/lni/dragonboat/v4"
+	"github.com/lni/dragonboat/v4/config"
+	"github.com/lni/dragonboat/v4/logger"
 
 	"github.com/thanhphu/raftbench/util"
 )
@@ -98,8 +99,8 @@ func Main(cluster string, nodeID int, addr string, join bool, test util.TestPara
 	logger.GetLogger("transport").SetLevel(logger.WARNING)
 	logger.GetLogger("grpc").SetLevel(logger.WARNING)
 	rc := config.Config{
-		NodeID:             uint64(nodeID),
-		ClusterID:          exampleClusterID,
+		ReplicaID:          uint64(nodeID),
+		ShardID:            exampleClusterID,
 		ElectionRTT:        10,
 		HeartbeatRTT:       1,
 		CheckQuorum:        true,
@@ -118,7 +119,7 @@ func Main(cluster string, nodeID int, addr string, join bool, test util.TestPara
 	if err != nil {
 		panic(err)
 	}
-	if err := nh.StartCluster(initialMembers, join, NewMemKV, rc); err != nil {
+	if err := nh.StartReplica(initialMembers, join, NewMemKV, rc); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)
 		os.Exit(1)
 	}

@@ -104,7 +104,7 @@ func Main(cluster string, nodeID int, addr string, join bool, test util.TestPara
 		ElectionRTT:        10,
 		HeartbeatRTT:       1,
 		CheckQuorum:        true,
-		SnapshotEntries:    10,
+		SnapshotEntries:    10000,
 		CompactionOverhead: 5,
 	}
 	datadir := filepath.Join(
@@ -123,16 +123,14 @@ func Main(cluster string, nodeID int, addr string, join bool, test util.TestPara
 		fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)
 		os.Exit(1)
 	}
+	fmt.Println("Moin")
 
 	cs := nh.GetNoOPSession(exampleClusterID)
 	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
 
 	util.Bench(test, func(k string) bool {
 		_, err := nh.SyncRead(ctx, exampleClusterID, k)
-		if err != nil {
-			return false
-		}
-		return true
+		return err == nil
 	}, func(k string, v string) bool {
 		kv := &KVData{
 			Key: k,
@@ -142,10 +140,8 @@ func Main(cluster string, nodeID int, addr string, join bool, test util.TestPara
 		if err != nil {
 			return false
 		}
+
 		_, err = nh.SyncPropose(ctx, cs, data)
-		if err != nil {
-			return false
-		}
-		return true
+		return err == nil
 	})
 }

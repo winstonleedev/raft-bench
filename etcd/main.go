@@ -17,7 +17,7 @@ package etcd
 import (
 	"strings"
 
-	"github.com/coreos/etcd/raft/raftpb"
+	"go.etcd.io/etcd/raft/v3/raftpb"
 
 	"github.com/thanhphu/raftbench/util"
 )

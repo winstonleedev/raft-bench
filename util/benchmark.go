@@ -43,7 +43,7 @@ func Bench(testParams TestParams, read func(string) bool, write func(string, str
 		for k := 0; k < testParams.NumKeys*testParams.Mil; k++ {
 			v := rand.Int()
 			tries := 0
-			for ok := false; !ok; ok = write(string(k), string(v)) {
+			for ok := false; !ok; ok = write(fmt.Sprintf("%d", k), fmt.Sprintf("%d", v)) {
 				time.Sleep(testParams.Step)
 				tries++
 				if tries > testParams.MaxTries {
@@ -59,7 +59,7 @@ func Bench(testParams TestParams, read func(string) bool, write func(string, str
 		failure = 0
 		for k := 0; k < testParams.NumKeys*testParams.Mil; k++ {
 			tries := 0
-			for ok := false; !ok; ok = read(string(k)) {
+			for ok := false; !ok; ok = read(fmt.Sprintf("%d", k)) {
 				time.Sleep(testParams.Step)
 				tries++
 				if tries > testParams.MaxTries {

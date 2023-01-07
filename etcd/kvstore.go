@@ -20,7 +20,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/coreos/etcd/snap"
+	"go.etcd.io/etcd/server/v3/etcdserver/api/snap"
 )
 
 // a key-value store backed by raft

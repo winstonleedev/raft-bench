@@ -18,6 +18,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -81,17 +82,22 @@ func NewMemKV(clusterID uint64, nodeID uint64) sm.IStateMachine {
 
 // Lookup queries the state machine.
 func (d *MemKV) Lookup(key interface{}) (interface{}, error) {
-	return d.kvStore[key], nil
+
+	val, ok := d.kvStore[key]
+	if !ok {
+		return nil, errors.New("key not found")
+	}
+	return val, nil
 }
 
 // Update updates the state machine.
 func (d *MemKV) Update(e sm.Entry) (sm.Result, error) {
 	kv := &KVData{}
 	err := json.Unmarshal(e.Cmd, kv)
-	if err != nil {
+	if err == nil {
 		d.kvStore[kv.Key] = kv.Val
 	}
-	return sm.Result{Value: uint64(len(e.Cmd))}, nil
+	return sm.Result{Value: uint64(len(e.Cmd)), Data: e.Cmd}, err
 }
 
 // SaveSnapshot saves the state machine state identified by the state

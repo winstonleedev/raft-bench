@@ -43,34 +43,6 @@ const (
 	exampleClusterID uint64 = 128
 )
 
-const (
-	PUT RequestType = iota
-	GET
-)
-
-func parseCommand(msg string) (RequestType, string, string, bool) {
-	parts := strings.Split(strings.TrimSpace(msg), " ")
-	if len(parts) == 0 || (parts[0] != "put" && parts[0] != "get") {
-		return PUT, "", "", false
-	}
-	if parts[0] == "put" {
-		if len(parts) != 3 {
-			return PUT, "", "", false
-		}
-		return PUT, parts[1], parts[2], true
-	}
-	if len(parts) != 2 {
-		return GET, "", "", false
-	}
-	return GET, parts[1], "", true
-}
-
-func printUsage() {
-	fmt.Fprintf(os.Stdout, "Usage - \n")
-	fmt.Fprintf(os.Stdout, "put key value\n")
-	fmt.Fprintf(os.Stdout, "get key\n")
-}
-
 func Main(cluster string, nodeID int, addr string, join bool, test util.TestParams) {
 	if len(addr) == 0 && nodeID != 1 && nodeID != 2 && nodeID != 3 {
 		fmt.Fprintf(os.Stderr, "node id must be 1, 2 or 3 when address is not specified\n")
@@ -123,10 +95,13 @@ func Main(cluster string, nodeID int, addr string, join bool, test util.TestPara
 		fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Println("Moin")
 
 	cs := nh.GetNoOPSession(exampleClusterID)
-	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+
+	// Wait for shard to become ready.
+	time.Sleep(2 * time.Second)
+
+	ctx, _ := context.WithTimeout(context.Background(), 1000*time.Second)
 
 	util.Bench(test, func(k string) bool {
 		_, err := nh.SyncRead(ctx, exampleClusterID, k)

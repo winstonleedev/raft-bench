@@ -71,13 +71,15 @@ func Main(cluster string, nodeID int, addr string, join bool, test util.TestPara
 	logger.GetLogger("transport").SetLevel(logger.WARNING)
 	logger.GetLogger("grpc").SetLevel(logger.WARNING)
 	rc := config.Config{
-		ReplicaID:          uint64(nodeID),
-		ShardID:            exampleClusterID,
-		ElectionRTT:        10,
-		HeartbeatRTT:       1,
-		CheckQuorum:        true,
-		SnapshotEntries:    10000,
-		CompactionOverhead: 5,
+		ReplicaID:              uint64(nodeID),
+		ShardID:                exampleClusterID,
+		ElectionRTT:            10,
+		HeartbeatRTT:           1,
+		CheckQuorum:            true,
+		SnapshotEntries:        0,
+		DisableAutoCompactions: true,
+		MaxInMemLogSize:        0,
+		CompactionOverhead:     5,
 	}
 	datadir := filepath.Join(
 		fmt.Sprintf("wal-dragonboat-%d", nodeID))

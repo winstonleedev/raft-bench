@@ -36,7 +36,7 @@ Use `raft-bench --help` for a list of parameters
 
 First install [goreman](https://github.com/mattn/goreman), which manages Procfile-based applications.
 
-The [Procfile script](../Procfile) will set up a local example cluster. Start it with:
+The [Procfile script](https://github.com/thanhphu/raft-bench/blob/master/Procfile) will set up a local example cluster. Start it with:
 
 ```sh
 goreman -f <procfile> start

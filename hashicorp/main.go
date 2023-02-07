@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/thanhphu/raftbench/hashicorp/http"
+	httpd "github.com/thanhphu/raftbench/hashicorp/http"
 	"github.com/thanhphu/raftbench/hashicorp/store"
 	"github.com/thanhphu/raftbench/util"
 )
@@ -55,11 +55,7 @@ func Main(httpAddr string, raftAddr string, joinAddr string, nodeID string, test
 
 	util.Bench(test, func(k string) bool {
 		_, err := s.Get(k)
-		if err != nil {
-			// log.Printf("error retrieving key %v\n", err)
-			return false
-		}
-		return true
+		return err == nil
 	}, func(k string, v string) bool {
 		err := s.Set(k, v)
 		if err != nil {
@@ -84,6 +80,10 @@ func join(joinAddr, raftAddr, nodeID string) error {
 			log.Printf("Error closing")
 		}
 	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
 
 	return nil
 }

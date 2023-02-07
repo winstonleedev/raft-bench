@@ -1,4 +1,3 @@
-# Use goreman to run `go get github.com/mattn/goreman`
-raftbench1: ./raftbench --engine hashi --nodeid node1 --haddr :11000 --raddr :12000 ./wal-hashi-1
-raftbench2: ./raftbench --engine hashi --nodeid node2 --haddr :11001 --raddr :12001 --joinaddr :11000 ./wal-hashi-2
-raftbench3: ./raftbench --engine hashi --nodeid node3 --haddr :11002 --raddr :12002 --joinaddr :11000 ./wal-hashi-3
+raftbench1: ./raftbench --engine hashi --nodeid node1 --haddr 127.0.0.1:11000 --raddr 127.0.0.1:12000 --test --step 1 --logfile hashi.csv ./wal-hashi-1
+raftbench2: ./raftbench --engine hashi --nodeid node2 --haddr 127.0.0.1:11001 --raddr 127.0.0.1:12001 --joinaddr 127.0.0.1:11000 ./wal-hashi-2
+raftbench3: ./raftbench --engine hashi --nodeid node3 --haddr 127.0.0.1:11002 --raddr 127.0.0.1:12002 --joinaddr 127.0.0.1:11000 ./wal-hashi-3

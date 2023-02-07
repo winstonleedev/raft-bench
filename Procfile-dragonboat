@@ -1,4 +1,4 @@
-# Use goreman to run `go get github.com/mattn/goreman`
-raftbench1: ./raftbench --engine dragonboat --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379 --id 1 --mil 1000 --firstWait 5000 --step 1 --maxTries 2 --test --logfile dragonboat.csv
+g Use goreman to run `go get github.com/mattn/goreman`
+raftbench1: ./raftbench --engine dragonboat --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379 --id 1 --step 1 --test --logfile dragonboat.csv
 raftbench2: ./raftbench --engine dragonboat --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379 --id 2
 raftbench3: ./raftbench --engine dragonboat --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379 --id 3

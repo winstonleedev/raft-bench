@@ -18,6 +18,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -25,7 +26,7 @@ import (
 	"runtime"
 	"unsafe"
 
-	sm "github.com/lni/dragonboat/v3/statemachine"
+	sm "github.com/lni/dragonboat/v4/statemachine"
 )
 
 func syncDir(dir string) (err error) {
@@ -57,13 +58,15 @@ type KVData struct {
 }
 
 // MemKV is a state machine that implements the IOnDiskStateMachine interface.
-// MemKV stores key-value pairs in the underlying RocksDB key-value store. As
+// MemKV stores key-value pairs n the underlying RocksDB key-value store. As
 // it is used as an example, it is implemented using the most basic features
 // common in most key-value stores. This is NOT a benchmark program.
 type MemKV struct {
 	clusterID uint64
 	nodeID    uint64
 	db        unsafe.Pointer
+	closed    bool
+	aborted   bool
 	kvStore   map[interface{}]interface{} // current committed key-value pairs
 }
 
@@ -79,22 +82,22 @@ func NewMemKV(clusterID uint64, nodeID uint64) sm.IStateMachine {
 
 // Lookup queries the state machine.
 func (d *MemKV) Lookup(key interface{}) (interface{}, error) {
-	return d.kvStore[key], nil
+
+	val, ok := d.kvStore[key]
+	if !ok {
+		return nil, errors.New("key not found")
+	}
+	return val, nil
 }
 
-// Update updates the state machine. In this example, all updates are put into
-// a RocksDB write batch and then atomically written to the DB together with
-// the index of the last Raft Log entry. For simplicity, we always Sync the
-// writes (db.wo.Sync=True). To get higher throughput, you can implement the
-// Sync() method below and choose not to synchronize for every Update(). Sync()
-// will periodically called by Dragonboat to synchronize the state.
-func (d *MemKV) Update(data []byte) (sm.Result, error) {
+// Update updates the state machine.
+func (d *MemKV) Update(e sm.Entry) (sm.Result, error) {
 	kv := &KVData{}
-	err := json.Unmarshal(data, kv)
+	err := json.Unmarshal(e.Cmd, kv)
 	if err == nil {
 		d.kvStore[kv.Key] = kv.Val
 	}
-	return sm.Result{Value: uint64(len(data)), Data: data}, err
+	return sm.Result{Value: uint64(len(e.Cmd)), Data: e.Cmd}, err
 }
 
 // SaveSnapshot saves the state machine state identified by the state
